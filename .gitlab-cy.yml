@@ -28,11 +28,11 @@ build_job:
       - dist/
     expire_in: 1 hour
   only:
-    - master
+    - main
 
 deploy_job:
   stage: deploy
   script:
     - rsync -av --delete dist/* $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
   only:
-    - master
+    - main
