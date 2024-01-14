@@ -1,0 +1,38 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DEPLOY_SERVER: $HOST
+  DEPLOY_USER: $USER
+  DEPLOY_PATH: ./
+
+before_script:
+  # Install dependencies only for Docker executor
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - ssh-keyscan -H "$DEPLOY_SERVER" >> ~/.ssh/known_hosts
+  - chmod 644 ~/.ssh/known_hosts
+
+build_job:
+  stage: build
+  image: node:latest
+  script:
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour
+  only:
+    - master
+
+deploy_job:
+  stage: deploy
+  script:
+    - rsync -av --delete dist/* $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
+  only:
+    - master
